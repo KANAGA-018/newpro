@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ProMax Smart Product Finder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#eef1f5;
+}
+
+.app{
+max-width:1200px;
+margin:auto;
+background:white;
+min-height:100vh;
+box-shadow:0 0 20px rgba(0,0,0,0.15);
+}
+
+header{
+background:#111;
+color:white;
+padding:12px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+header input{
+width:350px;
+padding:8px;
+border-radius:6px;
+border:none;
+}
+
+.page{
+display:none;
+text-align:center;
+padding:40px;
+}
+
+button{
+padding:10px 18px;
+margin:6px;
+border:none;
+border-radius:6px;
+background:#007bff;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#0056b3;
+}
+
+input,select{
+padding:10px;
+margin:6px;
+width:240px;
+}
+
+#filters{
+padding:15px;
+text-align:center;
+display:none;
+}
+
+#products{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:20px;
+padding:20px;
+}
+
+.product{
+background:white;
+border-radius:10px;
+padding:15px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+.product img{
+width:100%;
+height:170px;
+object-fit:cover;
+border-radius:8px;
+}
+
+.best{
+color:green;
+font-weight:bold;
+}
+
+.bottom-nav{
+position:fixed;
+bottom:0;
+width:100%;
+max-width:1200px;
+background:#111;
+display:none;
+justify-content:space-around;
+padding:10px 0;
+}
+
+.bottom-nav button{
+background:none;
+color:white;
+font-size:15px;
+}
+
+canvas{
+max-width:600px;
+margin:30px auto;
+display:block;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- ROLE PAGE -->
+
+<div id="rolePage" class="page" style="display:block">
+
+<h1>ProMax Finder</h1>
+<h3>Select Login</h3>
+
+<button onclick="showUser()">User</button>
+<button onclick="showAdmin()">Admin</button>
+
+</div>
+
+<!-- USER LOGIN -->
+
+<div id="userLogin" class="page">
+
+<h2>User Login</h2>
+
+<input id="mobile" placeholder="Mobile Number"><br>
+
+<select id="location">
+<option>Chennai</option>
+<option>Bangalore</option>
+<option>Coimbatore</option>
+<option>Hyderabad</option>
+</select><br>
+
+<button onclick="loginUser()">Enter</button>
+
+</div>
+
+<!-- ADMIN LOGIN -->
+
+<div id="adminLogin" class="page">
+
+<h2>Admin Login</h2>
+
+<input id="adminUser" placeholder="Username"><br>
+<input id="adminPass" type="password" placeholder="Password"><br>
+
+<button onclick="loginAdmin()">Login</button>
+
+</div>
+
+<!-- MAIN PAGE -->
+
+<div id="mainPage" style="display:none">
+
+<header>
+
+<h3>ProMax</h3>
+
+<input id="searchBar" placeholder="Search products..." onkeyup="searchProduct()">
+
+</header>
+
+<div id="filters"></div>
+
+<div id="products"></div>
+
+<canvas id="priceChart"></canvas>
+
+</div>
+
+<!-- PROFILE -->
+
+<div id="profile" class="page">
+
+<h2>User Profile</h2>
+
+<p id="profileMobile"></p>
+<p id="profileLocation"></p>
+
+<button onclick="goHome()">Back</button>
+
+</div>
+
+<!-- ADMIN PANEL -->
+
+<div id="adminPanel" class="page">
+
+<h2>Admin Dashboard</h2>
+
+<input id="pname" placeholder="Product Name">
+<input id="pbrand" placeholder="Brand">
+<input id="pcategory" placeholder="Category">
+<input id="pimg" placeholder="Image URL">
+<input id="amazon" placeholder="Amazon Price">
+<input id="flipkart" placeholder="Flipkart Price">
+<input id="rating" placeholder="Rating">
+<input id="shop" placeholder="Shop Name">
+
+<br>
+
+<button onclick="addProduct()">Add Product</button>
+
+<div id="adminProducts"></div>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+
+<div class="bottom-nav">
+
+<button onclick="goHome()">Home</button>
+<button onclick="toggleFilters()">Filters</button>
+<button onclick="showBestDeals()">Deals</button>
+<button onclick="showProfile()">Profile</button>
+
+</div>
+
+<script>
+
+let productList=[
+
+{name:"iPhone 14",brand:"Apple",category:"Mobiles",
+img:"https://picsum.photos/seed/iphone/400/300",
+amazon:79999,flipkart:78499,rating:4.8,shop:"Poorvika Mobiles"},
+
+{name:"Samsung Galaxy S23",brand:"Samsung",category:"Mobiles",
+img:"https://picsum.photos/seed/samsung/400/300",
+amazon:69999,flipkart:68999,rating:4.7,shop:"Reliance Digital"},
+
+{name:"Dell Laptop",brand:"Dell",category:"Laptops",
+img:"https://picsum.photos/seed/laptop/400/300",
+amazon:55999,flipkart:54999,rating:4.5,shop:"Dell Store"},
+
+{name:"Sony Headphones",brand:"Sony",category:"Electronics",
+img:"https://picsum.photos/seed/headphones/400/300",
+amazon:9999,flipkart:9499,rating:4.5,shop:"Croma"},
+
+{name:"Football",brand:"Nike",category:"Sports",
+img:"https://picsum.photos/seed/football/400/300",
+amazon:1999,flipkart:1799,rating:4.2,shop:"Decathlon"},
+
+{name:"Face Cream",brand:"Nivea",category:"Beauty",
+img:"https://picsum.photos/seed/cream/400/300",
+amazon:399,flipkart:349,rating:4.4,shop:"Health Store"},
+
+{name:"Vitamin Tablets",brand:"HealthVit",category:"Medicine",
+img:"https://picsum.photos/seed/medicine/400/300",
+amazon:599,flipkart:549,rating:4.3,shop:"Apollo Pharmacy"},
+
+{name:"Air Fryer",brand:"Philips",category:"Home Appliances",
+img:"https://picsum.photos/seed/airfryer/400/300",
+amazon:8999,flipkart:8599,rating:4.6,shop:"Croma"}
+
+]
+
+let chart
+
+function showUser(){
+rolePage.style.display="none"
+userLogin.style.display="block"
+}
+
+function showAdmin(){
+rolePage.style.display="none"
+adminLogin.style.display="block"
+}
+
+function loginUser(){
+
+profileMobile.innerText="Mobile: "+mobile.value
+profileLocation.innerText="Location: "+location.value
+
+userLogin.style.display="none"
+mainPage.style.display="block"
+
+document.querySelector(".bottom-nav").style.display="flex"
+
+renderFilters()
+showProducts()
+
+}
+
+function loginAdmin(){
+
+if(adminUser.value==="admin" && adminPass.value==="1234"){
+
+adminLogin.style.display="none"
+adminPanel.style.display="block"
+showAdminProducts()
+
+}else{
+alert("Invalid Login")
+}
+
+}
+
+function showProducts(list=productList){
+
+let html=""
+
+list.forEach(p=>{
+
+let best=Math.min(p.amazon,p.flipkart)
+let store=p.amazon<p.flipkart?"Amazon":"Flipkart"
+
+html+=`
+
+<div class="product">
+
+<img src="${p.img}">
+
+<h3>${p.name}</h3>
+
+<p>${p.brand}</p>
+
+<p>⭐ ${p.rating}</p>
+
+<p>Amazon ₹${p.amazon}</p>
+
+<a href="https://www.amazon.in/s?k=${p.name}" target="_blank">
+<button>Buy Amazon</button>
+</a>
+
+<p>Flipkart ₹${p.flipkart}</p>
+
+<a href="https://www.flipkart.com/search?q=${p.name}" target="_blank">
+<button>Buy Flipkart</button>
+</a>
+
+<p class="best">Best ₹${best} (${store})</p>
+
+<button onclick="openMap('${p.shop}')">Shop Location</button>
+
+<button onclick="showPriceHistory('${p.name}')">Price Chart</button>
+
+</div>
+
+`
+
+})
+
+products.innerHTML=html
+
+}
+
+function searchProduct(){
+
+let s=searchBar.value.toLowerCase()
+
+let filtered=productList.filter(p=>
+p.name.toLowerCase().includes(s) ||
+p.brand.toLowerCase().includes(s) ||
+p.category.toLowerCase().includes(s)
+)
+
+showProducts(filtered)
+
+}
+
+function renderFilters(){
+
+let categories=[...new Set(productList.map(p=>p.category))]
+
+let html="<b>Categories:</b> "
+
+categories.forEach(c=>{
+html+=`<button onclick="filterCategory('${c}')">${c}</button>`
+})
+
+html+=`<br><button onclick="showProducts()">Reset</button>`
+
+filters.innerHTML=html
+
+}
+
+function toggleFilters(){
+
+if(filters.style.display==="none")
+filters.style.display="block"
+else
+filters.style.display="none"
+
+}
+
+function filterCategory(c){
+showProducts(productList.filter(p=>p.category===c))
+}
+
+function showBestDeals(){
+
+let deals=productList.filter(p=>Math.abs(p.amazon-p.flipkart)>500)
+showProducts(deals)
+
+}
+
+function openMap(shop){
+window.open("https://www.google.com/maps/search/"+shop)
+}
+
+function showProfile(){
+
+mainPage.style.display="none"
+profile.style.display="block"
+
+}
+
+function goHome(){
+
+profile.style.display="none"
+mainPage.style.display="block"
+
+}
+
+function logout(){
+location.reload()
+}
+
+function addProduct(){
+
+let p={
+name:pname.value,
+brand:pbrand.value,
+category:pcategory.value,
+img:pimg.value,
+amazon:parseInt(amazon.value),
+flipkart:parseInt(flipkart.value),
+rating:parseFloat(rating.value),
+shop:shop.value
+}
+
+productList.push(p)
+
+showAdminProducts()
+
+}
+
+function showAdminProducts(){
+
+let html=""
+
+productList.forEach(p=>{
+html+=`<p>${p.name} ⭐${p.rating}</p>`
+})
+
+adminProducts.innerHTML=html
+
+}
+
+function showPriceHistory(name){
+
+if(chart) chart.destroy()
+
+chart=new Chart(priceChart,{
+type:"line",
+data:{
+labels:["Day1","Day2","Day3","Day4"],
+datasets:[{
+label:name+" Price",
+data:[100,120,110,130],
+borderWidth:2
+}]
+}
+})
+
+}
+
+</script>
+
+</body>
+</html>
